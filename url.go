@@ -12,6 +12,7 @@ import (
 
 // This will store our URL mappings
 var urlStore = make(map[string]string)
+var originalToShort = make(map[string]string) // Reverse mapping from original URL to short URL
 
 // Function to generate a random shortened URL
 func generateShortURL() string {
@@ -35,11 +36,21 @@ func shortenURL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Generate a short URL
+	// Check if the original URL already exists in the reverse mapping
+	if shortURL, exists := originalToShort[request.OriginalURL]; exists {
+		// Return the existing shortened URL
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintf(w, `{"short_url": "http://localhost:8080/%s"}`, shortURL)
+		return
+	}
+
+	// Generate a new short URL
 	shortURL := generateShortURL()
 
 	// Store the mapping
 	urlStore[shortURL] = request.OriginalURL
+	originalToShort[request.OriginalURL] = shortURL
 
 	// Return the shortened URL
 	w.Header().Set("Content-Type", "application/json")
